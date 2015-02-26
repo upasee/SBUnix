@@ -1,0 +1,17 @@
+#include<stdlib.h>
+#include<syscall.h>
+
+void exit(int status)
+{
+        uint64_t n= (uint64_t)status;
+        uint64_t a1=0x3c;
+
+         __asm __volatile("movq %0,%%rdi \n\t"
+			  "movq %1,%%rax \n\t"
+			  "syscall \n\t"
+			 :
+			 :"r"(a1),
+			  "r"(n)
+			 :"cc","memory");
+}
+
