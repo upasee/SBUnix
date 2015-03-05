@@ -5,7 +5,7 @@
 
 #define CONSOLE_START 0xB8000
 
-#define MAX_ROWS        25
+#define MAX_ROWS        24
 #define MAX_COLS        80
 
 static uint64_t offset = 0;
@@ -17,14 +17,25 @@ void update_cursor()
         offset = (80*row) + col;
 }
 
+void scroll(int colour, char *string)
+{
+	update_cursor();
+	volatile char *video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
+	while(*string != 0)
+	{
+		*video++ = *string++;
+        	*video++ = colour;
+	}
+	row++;
+}
+
+
 void write_string(int colour, const char *string)
 {
         int length = strlen(string);
         if (length > 2000)
                 return;
         update_cursor();
-        if (length > (2000 - offset))
-                return;
 
         volatile char *video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
         while( *string != 0 )
@@ -32,10 +43,19 @@ void write_string(int colour, const char *string)
                 if (*string == '\n')
                 {
                         col = 0;
-                        row++;
+			if (row < MAX_ROWS-1)
+                        	row++;
+			else
+			{
+				memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
+				memset((void *)0xB8E60, ' ', 80);
+				col = 0;
+				row = MAX_ROWS -1;
+			}
                         update_cursor();
                         string++;
                         video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
+			continue;
                 }
 
                 else if (*string == '\r')
@@ -44,11 +64,44 @@ void write_string(int colour, const char *string)
                         update_cursor();
                         string++;
                         video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
+			continue;
+                }
+		else if(*string == '\b')
+		{
+			video = video-2;
+			*video++ = ' ';
+			*video++ = colour;
+			offset = offset-1;
+			col = col- 1;
+			video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
+			string++;
+			
+		}
+		else if (*string == '\t')
+                {
+                        col = col+4;
+                        update_cursor();
+                        string++;
+                        video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
+
                 }
                 if (*string == '\0')
                         break;
                 *video++ = *string++;
-                *video++ = colour;
+		*video++ = colour;
+		if ((row == MAX_ROWS-1) && (col == MAX_COLS - 1))
+		{
+			int i=0;
+			while(i < 1000000)
+                                {
+                                        i++;
+                                }
+			memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
+			memset((void *)0xB8E60, ' ', 80);
+			col =0;
+			row = MAX_ROWS -1;
+			update_cursor();
+		}
                 if (col == MAX_COLS-1)
                 {
                         col = 0;
@@ -59,7 +112,6 @@ void write_string(int colour, const char *string)
 
         }
 }
-
 
 void printf(const char *format, ...)
 {
@@ -85,25 +137,33 @@ void printf(const char *format, ...)
                                         d = va_arg(args, int);
                                         temp1 = (const char *)itoa(d, 10);
                                         while(*temp1 != '\0')
+					{
                                                 str1[i++]= *temp1++;
+					}
                                         break;
                                 case 's':
                                         s = va_arg(args, char *);
                                         while(*s != '\0')
+					{
                                                 str1[i++] = *s++;
+					}
                                         break;
                                 case 'c':
                                         c = va_arg(args, int);
                                         temp2 = &c;
                                         while(*temp2 != '\0')
+					{
                                                 str1[i++] = *temp2++;
+					}
                                         break;
 
                                 case 'x':
                                         x = va_arg(args, unsigned int);
                                         temp3 = (const char *)itoa(x,16);
                                         while(*temp3 != '\0')
+					{
                                                 str1[i++] = *temp3++;
+					}
                                         break;
                                 case 'p':
                                         p = va_arg(args, void *);
@@ -111,7 +171,9 @@ void printf(const char *format, ...)
                                         str1[i++] = '0';
                                         str1[i++] = 'x';
                                         while(*temp4 != '\0')
+					{
                                                 str1[i++] = *temp4++;
+					}
                                         break;
                         }
                         format++;

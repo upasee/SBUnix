@@ -6,10 +6,18 @@
 #define PIC1		0x20		/* IO base address for master PIC */
 #define PIC2		0xA0		/* IO base address for slave PIC */
 
+#define MASTER_OFFSET	0x20		
 #define IRQ_SLAVE       2       // IRQ at which slave connects to master
 
 void reload_idt();
 void interrupt_init();
+void interrupt_enable();
+
+void interrupt_handler();
+
+//void t_divide(void);
+//void t_kdb(void);
+//void t_timer(void);
 
 struct segment_gate_descriptor {
         uint64_t gd_offset1:16;         /* Segment offset (Lower 15-0 bits) */

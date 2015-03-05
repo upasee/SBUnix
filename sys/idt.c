@@ -15,42 +15,42 @@ static struct idtr_t idtr = {
         .base = (uint64_t)idt,
 };
 
-void t_divide(void)
-{
-	printf("It didn't come here");
-	while(1);
+//void t_divide(void);
+extern void t_kdb(void);
+extern void t_timer(void);
+
+void setidt(struct segment_gate_descriptor *gate, void *offset,int n) {
+	gate[n].gd_offset1 = (uint64_t)(offset) & 0xffff;
+	gate[n].gd_css = 0x8;
+	gate[n].gd_ist = 0;
+	gate[n].gd_xx1 = 0;
+	gate[n].gd_type = 0xe;
+	gate[n].gd_zero = 0;
+	gate[n].gd_dpl = 0;
+	gate[n].gd_p = 1;
+	gate[n].gd_offset2 = ((uint64_t) offset >> 16) & 0xffff;
+	gate[n].gd_offset3 = ((uint64_t) offset >> 32) & 0xffffffff;
+	gate[n].gd_xx3 = 0;
 }
 
-void setidt(struct segment_gate_descriptor *gate, void *offset) {
-	gate->gd_offset1 = (uint64_t)(offset) & 0xffff;
-	gate->gd_css = 0x8;
-	gate->gd_ist = 0;
-	gate->gd_xx1 = 0;
-	gate->gd_type = 0xe;
-	gate->gd_zero = 0;
-	gate->gd_dpl = 0;
-	gate->gd_p = 1;
-	gate->gd_offset2 = ((uint64_t) offset >> 16) & 0xffff;
-	gate->gd_offset3 = ((uint64_t) offset >> 32) & 0xffffffff;
-	gate->gd_xx3 = 0;
-}
-
-void _x86_64_asm_lidt(struct idtr_t* idtr)
+void _x86_64_asm_lidt(struct idtr_t* idtr, uint64_t cs_idx, uint64_t ds_idx)
 {
-	__asm __volatile("lidt (%0)" 
-			 : 
-			 : "r" (idtr)
-			 :"cc","memory");
+	
+	__asm __volatile( "lidt (%0)" : : "r" (idtr));
 }
 
 void reload_idt() {
-	_x86_64_asm_lidt(&idtr);
+	_x86_64_asm_lidt(&idtr, 8, 16);
 }
 
 void interrupt_init()
 {
-	setidt(idt,&t_divide);
-//	setidt(idt[32],t_timer);
+//	setidt(idt,t_divide,0);
+	setidt(idt,t_timer,MASTER_OFFSET);
+	setidt(idt,t_kdb,MASTER_OFFSET+1);
 }
 
-
+void interrupt_enable()
+{
+	__asm("sti");
+}

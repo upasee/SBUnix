@@ -1,30 +1,78 @@
-#
-# gdt.s
-#
-#  Created on: Dec 29, 2010
-#      Author: cds
-#
+# Interrupt wrapper
 
-.text
+.global t_timer
+.global t_kdb
+t_timer :
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rbp
+	pushq %rdi
+	pushq %rsi
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
 
-######
-# load a new GDT
-#  parameter 1: address of gdtr
-#  parameter 2: new code descriptor offset
-#  parameter 3: new data descriptor offset
-.global _x86_64_asm_lgdt
-_x86_64_asm_lgdt:
+	call interrupt_handler
 
-	lgdt (%rdi)
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12  
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8 
+	popq %rsi 
+	popq %rdi 
+	popq %rbp
+	popq %rdx
+	popq %rcx
+	popq %rbx 
+	popq %rax
 
-	pushq %rsi                  # push code selector
-	movabsq $.done, %r10
-	pushq %r10                  # push return address
-	lretq                       # far-return to new cs descriptor ( the retq below )
-.done:
-	movq %rdx, %es
-	movq %rdx, %fs
-	movq %rdx, %gs
-	movq %rdx, %ds
-	movq %rdx, %ss
-	retq
+	iretq
+
+t_kdb :
+        pushq %rax
+        pushq %rbx
+        pushq %rcx
+        pushq %rdx
+        pushq %rbp
+        pushq %rdi
+        pushq %rsi
+        pushq %r8
+        pushq %r9
+        pushq %r10
+        pushq %r11
+        pushq %r12
+        pushq %r13
+        pushq %r14
+        pushq %r15
+
+        call interrupt_handler1
+
+        popq %r15
+        popq %r14
+        popq %r13
+        popq %r12
+        popq %r11
+        popq %r10
+        popq %r9
+        popq %r8
+        popq %rsi
+        popq %rdi
+        popq %rbp
+        popq %rdx
+        popq %rcx
+        popq %rbx
+        popq %rax
+
+        iretq
+

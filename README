@@ -1,3 +1,12 @@
+Part 1 : printf supports %d, %c, %s, %x and %p. It handles \n, \r, \t and \b. Scrolling is implemented. The last row is reserved for timer and keyboard glyph.
+Part 2 : Timer interrupt is handled and it displays time from 1 till 9999 s since boot.
+Part 3 : Keyboard interrupt is handled and it prints all the typed characters on the console and it prints the last pressed glyph next to the clock. Shift key is handled, ctrl key is not.
+
+REFERENCES :
+
+http://wiki.osdev.org/
+http://www.osdever.net/
+
 The provided Makefile:
   1) builds a kernel
   2) copies it into rootfs/boot/kernel/kernel

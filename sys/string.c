@@ -40,7 +40,8 @@ char* itoa(unsigned long num, int base)
         int i= 0;
         if (num == 0)
         {
-                stritoa[0] = '\0';
+		stritoa[0] = '0';
+                stritoa[1] = '\0';
                 return stritoa;
         }
         if (num < 0)
@@ -62,3 +63,40 @@ char* itoa(unsigned long num, int base)
         return str1;
 }
 
+void *memset(void *s, int c, size_t n)
+{
+        unsigned char *p = s;
+        while((n > 0) && s)
+        {
+                *p++ = c;
+                *p++ = 0x7;
+                n--;
+        }
+        return s;
+}
+
+char *strcpy(char*d, const char*s)
+{
+        int i=0;
+        while(s[i]!='\0')
+        {
+                d[i] = s[i];
+                i++;
+        }
+        d[i] = '\0';
+        return d;
+}
+
+
+void memcpy(volatile char *dst, volatile char *src, size_t size)
+{
+
+	while(size > 0)
+	{
+		*dst=*src;
+		dst++;
+		src++;
+		size--;
+	}
+	*dst='\0';
+}

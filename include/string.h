@@ -8,6 +8,8 @@ int strcmp(const char *, const char *);
 char *strncpy(char *, const char *, size_t);
 int strncmp(const char *, const char *, size_t);
 void *memset(void *, int, size_t);
+void *memset1(void *, int, size_t);
 int tokenize(char str[], char *input[],char delim);
 char* itoa(unsigned long num, int base);
+void memcpy(volatile char * dst, volatile char *src, size_t len);
 #endif

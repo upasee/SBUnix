@@ -2,11 +2,25 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include <sys/idt.h>
+#include <sys/pic.h>
+#include <sys/port.h>
+#include <sys/pic.h>
+#include<string.h>
 
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
 	interrupt_init();
         reload_idt();
+	
+	IRQ_clear_mask(0);
+	int div = 1193;
+	outb(0x43,0x36);
+	outb(0x40, div & 0xff);
+	outb(0x43,div >> 8);
+	interrupt_enable();
+
+	IRQ_clear_mask(1);
+
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
@@ -18,9 +32,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 		}
 	}
 	printf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-	printf("warmup 2 part 1 done!!!\n");
-	__asm __volatile("int $0x00");
-	printf("Wtf\n");
 	while(1);
 	// kernel starts here
 }
@@ -41,10 +52,10 @@ void boot(void)
 		:"=g"(loader_stack)
 		:"r"(&stack[INITIAL_STACK_SIZE])
 	);
+	
+	PIC_remap(0x20,0x28);
 	reload_gdt();
 	setup_tss();
-//	interrupt_init();
-//	reload_idt();
 	start(
 		(uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
 		&physbase,
