@@ -3,7 +3,8 @@
 #include<string.h>
 #include<sys/defs.h>
 
-#define CONSOLE_START 0xB8000
+#define CONSOLE_START 0xffffffff800b8000
+//#define CONSOLE_START 0xb8000
 
 #define MAX_ROWS        24
 #define MAX_COLS        80
@@ -47,8 +48,10 @@ void write_string(int colour, const char *string)
                         	row++;
 			else
 			{
-				memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
-				memset((void *)0xB8E60, ' ', 80);
+			//	memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
+				memcpy((void *)0xFFFFFFFF800B8000, (void *)0xFFFFFFFF800B80A0, 3680);
+			//	memset((void *)0xB8E60, ' ', 80);
+				memset((void *)0xFFFFFFFF800B8E60, ' ', 80);
 				col = 0;
 				row = MAX_ROWS -1;
 			}
@@ -96,8 +99,10 @@ void write_string(int colour, const char *string)
                                 {
                                         i++;
                                 }
-			memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
-			memset((void *)0xB8E60, ' ', 80);
+			//memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
+			memcpy((void *)0xFFFFFFFF800B8000, (void *)0xFFFFFFFF800B80A0, 3680);
+			//memset((void *)0xB8E60, ' ', 80);
+			memset((void *)0xFFFFFFFF800B8E60, ' ', 80);
 			col =0;
 			row = MAX_ROWS -1;
 			update_cursor();
@@ -123,7 +128,8 @@ void printf(const char *format, ...)
         unsigned long x;
         va_list args;
         va_start(args, format);
-        char *str1 = NULL;
+      //  char *str1 = NULL;
+	char str1[4096];
         int i=0;
 	
 	while (*format)

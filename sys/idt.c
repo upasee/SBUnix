@@ -15,9 +15,14 @@ static struct idtr_t idtr = {
         .base = (uint64_t)idt,
 };
 
-//void t_divide(void);
+extern void t_divide(void);
 extern void t_kdb(void);
 extern void t_timer(void);
+extern void t_pf(void);
+extern void t_gpf(void);
+extern void t_align(void);
+extern void t_stack(void);
+extern void t_seg(void);
 
 void setidt(struct segment_gate_descriptor *gate, void *offset,int n) {
 	gate[n].gd_offset1 = (uint64_t)(offset) & 0xffff;
@@ -45,9 +50,14 @@ void reload_idt() {
 
 void interrupt_init()
 {
-//	setidt(idt,t_divide,0);
+	setidt(idt,t_divide,0);
 	setidt(idt,t_timer,MASTER_OFFSET);
 	setidt(idt,t_kdb,MASTER_OFFSET+1);
+	setidt(idt,t_pf,14);
+	setidt(idt,t_gpf,13);
+	setidt(idt,t_align,17);
+	setidt(idt,t_stack,12);
+	setidt(idt,t_seg,11);
 }
 
 void interrupt_enable()

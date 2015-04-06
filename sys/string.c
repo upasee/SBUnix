@@ -75,6 +75,18 @@ void *memset(void *s, int c, size_t n)
         return s;
 }
 
+void *memset1(void *s, int c, size_t n)
+{
+        unsigned char *p = s;
+        while((n > 0) && s)
+        {
+                *p++ = c;
+                n--;
+        }
+        return s;
+}
+
+
 char *strcpy(char*d, const char*s)
 {
         int i=0;

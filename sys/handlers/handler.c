@@ -109,13 +109,24 @@ void interrupt_handler()
 	{
 		sec = timer_ticks/18;
 		char *string = itoa(sec,10);
-		volatile char *video = (volatile char*)0xB8F98;
+		volatile char *video = (volatile char*)0xFFFFFFFF800B8F98;
 		while( *string != 0 )
 		{
 			*video++ = *string++;
 			*video++ = 7;
 		}
 	}
+}
+
+void interrupt_handler2()
+{
+	printf("IN THE HANDLER\n");
+	while(1);
+}
+
+void temp_handler()
+{
+	
 }
 
 void interrupt_handler1()
@@ -137,8 +148,10 @@ void interrupt_handler1()
 		d = map[c];
 	}
 	printf("%c", d);
-	char *string = NULL;
-        volatile char *video = (volatile char*)0xB8F90;
+//	char *string = NULL;
+	char string[4096];
+	int i=0;
+        volatile char *video = (volatile char*)0xFFFFFFFF800B8F90;
         *video++ = ' ';
         *video++ = 7;
         *video++ = ' ';
@@ -149,28 +162,33 @@ void interrupt_handler1()
                 string[0] = '\\';
                 string[1] = 'n';
                 string[2] = '\0';
+		i = 3;
         }
         else if(d == '\b')
         {
                 string[0] =  '\\';
                 string[1] = 'b';
                 string[2] = '\0';
+		i = 3;
         }
 	else if(d == '\t')
         {
                 string[0] = '\\';
                 string[1] = 't';
                 string[2] = '\0';
+		i = 3;
         } 
         else
         {
                 string[0] = d;
                 string[1] = '\0';
+		i = 2;
         }
-        video = (volatile char*)0xB8F90;
+        video = (volatile char*)0xFFFFFFFF800B8F90;
         while( *string != 0 )
         {
-                *video++ = *string++;
+                *video++ = string[i];
+		i++;
                 *video++ = 7;
         }
 	
