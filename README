@@ -1,33 +1,74 @@
-Part 1 : printf supports %d, %c, %s, %x and %p. It handles \n, \r, \t and \b. Scrolling is implemented. The last row is reserved for timer and keyboard glyph.
-Part 2 : Timer interrupt is handled and it displays time from 1 till 9999 s since boot.
-Part 3 : Keyboard interrupt is handled and it prints all the typed characters on the console and it prints the last pressed glyph next to the clock. Shift key is handled, ctrl key is not.
+The copyrights are added in the LICENSE file.
 
-REFERENCES :
+Project Partners :      Upasi Mehta             109915526       umehta
+                        Nargis Nigar            109889328       nnigar
 
-http://wiki.osdev.org/
+Project Level : Preemptive Operating System (70 Marks)
+
+Kernel : 
+
+Almost All the Kernel level implementation is done. (Memory Management Subsystem, Process subsystem, Auto-growing stack, COW fork, etc.)
+TARFS: open, read, close, opendir, readdir, closedir is implemented.
+
+Binaries are : sbush, ls, ps, kill, idle. 
+
+The idle binary has just while(1) in it, so that in case no other process is running, the Scheduler will have something to run.
+The scheduler is a simple round robin (premeptive) scheduler.
+
+Exceptions :
+
+1) Scanf does not support backspace. (It shows inconsistent behavior.)
+
+2) User malloc can not be done beyond the hard limit. (5 pages in our case.)
+
+3) All the functions except alarm from the stdlib.h are implemented.
+
+Instructions to run shell:
+
+sbush (The shell from warmup1) is present as sbush.c in bin/sbush folder.
+
+The rootfs folder is the root of the system. It is displayed as '/'. The /bin/ folder is the default home folder. To change the Path, give a slash in the end. /bin/ or /libc/ and seperate it with a colon.
+
+Functionalities Implemented by the shell and steps to run them :
+
+The shell will display the value of PS1 variable along with the absolute path of the directory you are in. rootfs  This part is not a part of the PS1 variable. i.e. If you try to change PS1, only the text before the path will be changed.
+
+1. PS1 : export PS1=sometext will change the text of PS1. (No space between PS1, = and the input.)
+                 echo $PS1 will print the value of PS1.
+
+2. PATH : export PATH=somepath will change the PATH variable.(No space between PATH, = and the input. Also, prepending and appending of PATH is not supported. i.e. You can not add some PATH to the exisiting one. )
+
+3. cd : Supports cd ~, cd , cd /, cd (any relative or absolute path). (Does not support cd -).
+
+4. echo : echo $PATH or echo $PS1 will print the value of that environment variable (or PS1); echo sometext will print back that text to STDOUT.
+
+5. export : export command can be used to change the value of PATH and PS1 variables. (Doesn't support changing other environment variables)
+	export X=Y format should be used
+
+6. Binaries : Binaries run with and without absolute path. eg, ls can be run as ls as well as /bin/ls. Also, it bin is not present in the PATH variable and if we run ls when we are in /bin folder, it will work.
+
+7. exit : exit from the shell.
+
+SOME EXCEPTIONS :
+
+1. If a background process tries to run scanf, it is killed.
+
+2. printf(const char* fmt, ...) - supports %d, %x, %c and %s
+
+3. Path Variable not being prepended/appended.
+
+4. Do not add any extra space between the commands and their arguments.
+
+5. The input/command can not be more than 1024 characters.
+
+6. pipe: The user shell code of pipe is not compatible with the Kernel code. To test pipes, you can directly call the syscall or check the code.
+
+7. less/more is not supported.
+
+References:
+https://piazza.com/class/i5glak0eumz4g9
+http://wiki.osdev.org/Expanded_Main_Page
+Malloc Tutorial - http://www.inf.udec.cl/~leo/Malloc_tutorial.pdf
+System call definition - http://blog.rchapman.org/post/36801038863/linux-system-call-table-for-x86-64
+http://www.jamesmolloy.co.uk/tutorial_html/
 http://www.osdever.net/
-
-The provided Makefile:
-  1) builds a kernel
-  2) copies it into rootfs/boot/kernel/kernel
-  3) creates an ISO CD image with the rootfs/ contents
-
-To boot the system in QEMU, run:
-  qemu-system-x86_64 -curses -cdrom $USER.iso -drive id=disk,file=$USER.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0 -net nic -net user,hostfwd=tcp::10080-:80 -net user,hostfwd=tcp::10023-:23 --no-reboot -gdb tcp::9998
-
-  Explanation of parameters:
-  -curses         use a text console (omit this to use default SDL/VNC console)
-  -cdrom x.iso    connect a CD-ROM and insert CD with x.iso disk
-  --no-reboot     exit when guest reboots
-  -gdb tcp::9998  listen for "remote" debugging connections on port 9998
-
-  connect a hard drive with x.img disk:
-  -drive id=disk,file=$USER.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0
-  connect a NIC and forward local port 10080 into port 80 and local port 10023 to port 23
-  -net nic -net user,hostfwd=tcp::10080-:80 -net user,hostfwd=tcp::10023-:23
-
-When using the -curses mode, switch to the qemu> console with ESC-2.
-
-To connect a remote debugger to the running qemu VM:
-  gdb ./kernel
-  target remote localhost:9998

@@ -68,3 +68,16 @@ void setup_tss() {
 	sd->sd_gran = 0;
 	sd->sd_hibase = ((uint64_t)&tss) >> 24;
 }
+
+
+void tss_flush(void)
+{
+	__asm __volatile(	"mov $0x2b,%%ax \n\t"		
+				"ltr %%ax \n\t"
+				"retq \n\t"
+				:
+				:
+				:"rax","cc","memory"
+			);
+	
+}

@@ -1,4 +1,5 @@
-#include<string.h>
+#include<sys/string.h>
+#include<sys/paging.h>
 #include<sys/defs.h>
 
 size_t strlen(const char*s)
@@ -12,6 +13,36 @@ size_t strlen(const char*s)
         return count;
 }
 
+int strncmp(const char *str1, const char *str2, size_t n)
+{
+        int i=0;
+        while ((n > 0) && ((str1[i] != '\0') || (str2[i] != '\0')))
+        {
+                if (str1[i] > str2[i])
+                        return 1;
+                else if(str1[i] < str2[i])
+                        return -1;
+                i++;
+                n--;
+        }
+        if (n == 0)
+                return 0;
+        return 0;
+}
+
+int strcmp(const char *str1, const char *str2)
+{
+        int i=0;
+        while((str1[i]!='\0') || (str2[i]!='\0'))
+        {
+                if(str1[i] > str2[i])
+                        return 1;
+                if(str1[i] < str2[i])
+                        return -1;
+                i++;
+        }
+        return 0;
+}
 
 char* reverse_string(char str[])
 {
@@ -63,6 +94,31 @@ char* itoa(unsigned long num, int base)
         return str1;
 }
 
+unsigned int atoi(char * str, int base)
+{
+        int i, res = 0;
+        for (i = 0; str[i] != '\0'; ++i)
+        {
+                if(str[i] == '\n')
+                        break;
+                if((str[i] >= 'a') && (str[i] <= 'f'))
+                {
+                        res = res*base+ str[i] + 10 - 'a';
+                }
+                else if((str[i] >= 'A') && (str[i] <= 'F'))
+                {
+                        res = res*base + str[i] + 10 - 'A';
+                }
+                else if((str[i] >= '0') && (str[i] <= '9'))
+                {
+                        res = res*base + str[i] - '0';
+                }
+                else
+                        break;
+        }
+        return res;
+}
+
 void *memset(void *s, int c, size_t n)
 {
         unsigned char *p = s;
@@ -99,16 +155,40 @@ char *strcpy(char*d, const char*s)
         return d;
 }
 
-
-void memcpy(volatile char *dst, volatile char *src, size_t size)
+void memcpy(void *dest, volatile void *src, size_t size)
 {
-
-	while(size > 0)
-	{
-		*dst=*src;
-		dst++;
-		src++;
-		size--;
-	}
-	*dst='\0';
+        char *csrc = (char *)src; 
+        char *cdest = (char *)dest;
+        while(size > 0)
+        {
+                 *cdest=*csrc;
+                 cdest++;
+                 csrc++;
+                 size--;
+        }
 }
+
+int tokenize(char str[], char *input[],char delim)
+{
+        int i=0,j=0,k=0;
+        for(i=0;str[i]!='\0' && str[i] == delim;i++);
+
+        for(;str[i]!='\0';)
+        {
+                k = 0;
+                input[j]=(char*)kmalloc(20);
+                while(str[i]!=delim && str[i]!='\0')
+                {
+                        input[j][k] = str[i];
+                        i++;
+                        k++;
+                }
+                if(str[i]!='\0')
+                        i++;
+		input[j][k]='\0';
+                j++;
+        }
+        input[j]=NULL;
+        return j;
+}
+

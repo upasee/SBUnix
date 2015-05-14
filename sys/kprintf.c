@@ -1,10 +1,9 @@
 #include<sys/sbunix.h>
 #include<stdarg.h>
-#include<string.h>
+#include<sys/string.h>
 #include<sys/defs.h>
 
 #define CONSOLE_START 0xffffffff800b8000
-//#define CONSOLE_START 0xb8000
 
 #define MAX_ROWS        24
 #define MAX_COLS        80
@@ -30,17 +29,17 @@ void scroll(int colour, char *string)
 	row++;
 }
 
-
-void write_string(int colour, const char *string)
+void write_string(int colour, const char *string, int size)
 {
         int length = strlen(string);
         if (length > 2000)
                 return;
         update_cursor();
-
+	int m =0;
         volatile char *video = (volatile char*)(CONSOLE_START + ((uintptr_t)offset)*2);
-        while( *string != 0 )
+        while( *string != 0  && m < size)
         {
+		m++;
                 if (*string == '\n')
                 {
                         col = 0;
@@ -48,9 +47,7 @@ void write_string(int colour, const char *string)
                         	row++;
 			else
 			{
-			//	memcpy((void *)0xB8000, (void *)0xB80A0, 3680);
 				memcpy((void *)0xFFFFFFFF800B8000, (void *)0xFFFFFFFF800B80A0, 3680);
-			//	memset((void *)0xB8E60, ' ', 80);
 				memset((void *)0xFFFFFFFF800B8E60, ' ', 80);
 				col = 0;
 				row = MAX_ROWS -1;
@@ -114,11 +111,11 @@ void write_string(int colour, const char *string)
                 }
                 else
                         col++;
-
+	
         }
 }
 
-void printf(const char *format, ...)
+void kprintf(const char *format, ...)
 {
 	int d;
         char *s;
@@ -128,7 +125,6 @@ void printf(const char *format, ...)
         unsigned long x;
         va_list args;
         va_start(args, format);
-      //  char *str1 = NULL;
 	char str1[4096];
         int i=0;
 	
@@ -157,10 +153,7 @@ void printf(const char *format, ...)
                                 case 'c':
                                         c = va_arg(args, int);
                                         temp2 = &c;
-                                        while(*temp2 != '\0')
-					{
-                                                str1[i++] = *temp2++;
-					}
+					str1[i++] = *temp2++;
                                         break;
 
                                 case 'x':
@@ -192,6 +185,6 @@ void printf(const char *format, ...)
 		}
         }
         str1[i] = '\0';
-        write_string(7, (const char*)str1);
+        write_string(7, (const char*)str1, strlen(str1));
         va_end(args);
 }

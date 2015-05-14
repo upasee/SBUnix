@@ -1,27 +1,33 @@
 #ifndef _STDLIB_H
 #define _STDLIB_H
 
+#define EACCESS 13 /* Permission Denied */
+
 #include <sys/defs.h>
 
 extern __thread int errno;
 
 void exit(int status);
+void yield();
 
 // memory
 typedef uint64_t size_t;
 void *malloc(size_t size);
 void free(void *ptr);
 int brk(void *end_data_segment);
+void* sbrk(uintptr_t increment);
 
 // processes
 typedef uint32_t pid_t;
 pid_t fork(void);
 pid_t getpid(void);
+int ps(void);
 pid_t getppid(void);
 int execve(const char *filename, char *const argv[], char *const envp[]);
 pid_t waitpid(pid_t pid, int *status, int options);
 unsigned int sleep(unsigned int seconds);
 unsigned int alarm(unsigned int seconds);
+int kill(int pid);
 
 // paths
 char *getcwd(char *buf, size_t size);
@@ -48,8 +54,14 @@ struct dirent
 	long d_ino;
 	off_t d_off;
 	unsigned short d_reclen;
-	char d_name [NAME_MAX+1];
+	char d_name[NAME_MAX+1];
 };
+
+struct DIR{
+        int fd;
+        struct dirent* d;
+};
+
 void *opendir(const char *name);
 struct dirent *readdir(void *dir);
 int closedir(void *dir);

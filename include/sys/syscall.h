@@ -1,6 +1,7 @@
 #ifndef __SYS_SYSCALL_H
 #define __SYS_SYSCALL_H
 
+/*
 #define SYS_exit       60
 #define SYS_brk        12
 #define SYS_fork       57
@@ -21,5 +22,33 @@
 #define SYS_dup        32
 #define SYS_dup2       33
 #define SYS_getdents   78
+*/
+enum {
+        SYS_exit = 0,
+        SYS_brk,
+        SYS_pipe,
+        SYS_dup,
+        SYS_dup2,
+        SYS_fork,
+        SYS_read,
+        SYS_wait4,
+        SYS_open,
+	SYS_lseek,
+	SYS_getcwd,
+	SYS_nanosleep,
+	SYS_getpid,
+	SYS_getppid,
+	SYS_alarm,
+	SYS_kill,
+	SYS_ps,
+        SYS_write,
+        SYS_chdir,
+        SYS_close,
+        SYS_yield,
+        SYS_getdents,
+        SYS_execve
+};
+
+
 
 #endif

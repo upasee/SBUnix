@@ -10,9 +10,9 @@ int strncmp(const char *, const char *, size_t);
 void *memset(void *, int, size_t);
 void *memset1(void *, int, size_t);
 int tokenize(char str[], char *input[],char delim);
-void itoa(unsigned long num, int base, char *stritoa);
+char *itoa(unsigned long num, int base);
 unsigned int atoi(char * str, int base);
-void reverse_string(char str[]);
-void memcpy(volatile char * dst, volatile char *src, size_t len);
-void remove_slash_before(char *s);
+char * reverse_string(char str[]);
+//void memcpy(volatile char * dst, volatile char *src, size_t len);
+void memcpy(void * dst, volatile void *src, size_t len);
 #endif

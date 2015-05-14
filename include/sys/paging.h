@@ -4,12 +4,23 @@
 #include <sys/defs.h>
 #include <stdlib.h>
 
+// Page table/directory entry flags.
+#define PTE_P           0x001   // Present
+#define PTE_W           0x002   // Writeable
+#define PTE_U           0x004   // User
+#define PTE_D           0x040   // Dirty
+#define PTE_COW         0x800   // Copy-On-Write
+
+#define KERNBASE 	0xffffffff80000000
+#define PTE_NP 		0xfffffffffffff000
+#define PTE_NW          0xfffffffffffffffd
+#define PTE_NCOW        0xfffffffffffff7ff
+
 struct Page
 {
         struct Page *nextPage;
         int refcount;
 };
-
 
 struct smap_t {
                 uint64_t base, length;
@@ -17,8 +28,9 @@ struct smap_t {
         }__attribute__((packed)) *smap;
 
 
-uint64_t roundDown(void *addr);
-uint64_t roundUp(void *addr);
+struct Page* PageFromPhysAddr(uint64_t physAddr);
+uint64_t roundDown(void *addr, size_t size);
+uint64_t roundUp(void *addr, size_t size);
 uint64_t *kmalloc(uint64_t sz);
 void *physicalAddr(void *virtualAddr);
 size_t kern_pages(void *physbase, void *physfree);
@@ -33,30 +45,9 @@ uint64_t pt_index(void* va);
 uint64_t physAddrFromPage(struct Page *p);
 struct Page* phys_page_alloc();
 void phys_page_free(struct Page *p);
-void middle_backtrack(struct Page *middlePage, uint64_t *upper_dir,void *va);
-void upper_backtrack(struct Page *upperPage, uint64_t *global_dir, void *va);
-uint64_t* page_walk(uint64_t *global_dir, void* va);
+uint64_t* page_walk(uint64_t *global_dir, void* va, bool createFlag, int perm);
 void vm_setup(uint64_t *global_dir, int npages);
 int markKernelUsed();
-
-
-
-// Page table/directory entry flags.
-#define PTE_P           0x001   // Present
-#define PTE_W           0x002   // Writeable
-#define PTE_U           0x004   // User
-#define PTE_PWT         0x008   // Write-Through
-#define PTE_PCD         0x010   // Cache-Disable
-#define PTE_A           0x020   // Accessed
-#define PTE_D           0x040   // Dirty
-#define PTE_PS          0x080   // Page Size
-#define PTE_MBZ         0x180   // Bits must be zero
-
-// The PTE_AVAIL bits aren't used by the kernel or interpreted by the
-// hardware, so user processes are allowed to set them arbitrarily.
-#define PTE_AVAIL       0xE00   // Available for software use
-
-
 
 #endif
 

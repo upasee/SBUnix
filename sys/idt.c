@@ -16,22 +16,23 @@ static struct idtr_t idtr = {
 };
 
 extern void t_divide(void);
-extern void t_kdb(void);
+extern void t_kbd(void);
 extern void t_timer(void);
 extern void t_pf(void);
 extern void t_gpf(void);
 extern void t_align(void);
 extern void t_stack(void);
 extern void t_seg(void);
+extern void t_syscall(void);
 
-void setidt(struct segment_gate_descriptor *gate, void *offset,int n) {
+void setidt(struct segment_gate_descriptor *gate, void *offset,int n, int dpl) {
 	gate[n].gd_offset1 = (uint64_t)(offset) & 0xffff;
 	gate[n].gd_css = 0x8;
 	gate[n].gd_ist = 0;
 	gate[n].gd_xx1 = 0;
 	gate[n].gd_type = 0xe;
 	gate[n].gd_zero = 0;
-	gate[n].gd_dpl = 0;
+	gate[n].gd_dpl = dpl;
 	gate[n].gd_p = 1;
 	gate[n].gd_offset2 = ((uint64_t) offset >> 16) & 0xffff;
 	gate[n].gd_offset3 = ((uint64_t) offset >> 32) & 0xffffffff;
@@ -50,14 +51,15 @@ void reload_idt() {
 
 void interrupt_init()
 {
-	setidt(idt,t_divide,0);
-	setidt(idt,t_timer,MASTER_OFFSET);
-	setidt(idt,t_kdb,MASTER_OFFSET+1);
-	setidt(idt,t_pf,14);
-	setidt(idt,t_gpf,13);
-	setidt(idt,t_align,17);
-	setidt(idt,t_stack,12);
-	setidt(idt,t_seg,11);
+	setidt(idt,t_divide,0,0);
+	setidt(idt,t_timer,MASTER_OFFSET,0);
+	setidt(idt,t_kbd,MASTER_OFFSET+1,0);
+	setidt(idt,t_pf,14,0);
+	setidt(idt,t_gpf,13,0);
+	setidt(idt,t_align,17,0);
+	setidt(idt,t_stack,12,0);
+	setidt(idt,t_seg,11,0);
+	setidt(idt,t_syscall,128,3);
 }
 
 void interrupt_enable()

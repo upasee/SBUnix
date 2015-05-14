@@ -1,7 +1,14 @@
 #include<sys/sbunix.h>
+#include<sys/paging.h>
+#include<sys/process.h>
 #include<sys/idt.h>
+#include<sys/sched.h>
 #include<sys/port.h>
-#include<string.h>
+#include<sys/string.h>
+#include<sys/file.h>
+
+volatile int scan_flag;
+volatile int flag1;
 
 static uint8_t map[256]=
 {
@@ -53,8 +60,8 @@ static uint8_t map[256]=
 	[0x30] = 'b',
 	[0x31] = 'n',
 	[0x32] = 'm',
-	[0x33] = '<',
-	[0x34] = '>',
+	[0x33] = ',',
+	[0x34] = '.',
 	[0x35] = '/',
 	[0x37] = '*',
 	[0x39] = ' '
@@ -62,6 +69,8 @@ static uint8_t map[256]=
 
 static uint8_t shiftmap[256] = 
 {
+	[0x08] = '&',
+	[0x05] = '$',
         [0x10] = 'Q',
         [0x11] = 'W',
         [0x12] = 'E',
@@ -107,6 +116,17 @@ void interrupt_handler()
 	timer_ticks++;
 	if (timer_ticks % 18 == 0)
 	{
+		struct task_struct *sleeping = taskFreeList;
+                while(sleeping)
+                {
+                        if (sleeping->status == SLEEPING)
+                        {
+                                sleeping->sleep_seconds--;
+                                if (sleeping->sleep_seconds == 0)
+                                        sleeping->status = RUNNABLE;
+                        }
+			sleeping = sleeping->next_task;
+                }
 		sec = timer_ticks/18;
 		char *string = itoa(sec,10);
 		volatile char *video = (volatile char*)0xFFFFFFFF800B8F98;
@@ -115,42 +135,103 @@ void interrupt_handler()
 			*video++ = *string++;
 			*video++ = 7;
 		}
+		if(scan_flag != 1)
+			sched();
 	}
 }
 
 void interrupt_handler2()
 {
-	printf("IN THE HANDLER\n");
+	kprintf("IN THE HANDLER\n");
 	while(1);
 }
 
 void temp_handler()
 {
-	
+	kprintf("In temp handler");
+	while(1);
 }
 
-void interrupt_handler1()
+uint64_t getcr2()
 {
-	outb(0x20,0x20);
-	unsigned char c = 0x0;
-	uint8_t d;
-	c = inb(0x60);
-	if (c & 0x80)
-		return;
-	if (c == 0x2a)
+        uint64_t cr2;
+         __asm __volatile(      "movq %%cr2,%0"
+                                :"=r"(cr2)
+                                :
+                                : "memory","cc"
+                                );
+	 return cr2;
+}
+
+void pf_handler()
+{
+	uint64_t cr2 = getcr2();
+
+	loadcr3((void *)current_task->cr3);
+	uint64_t *fault_va = (uint64_t *)roundDown((void *) cr2, 0x1000);
+	if (fault_va <= (uint64_t *)0x8029fff8 && fault_va >=(uint64_t *)0x8029b000)
+        {
+                mem_alloc(current_task->pml4e, (void  *)(fault_va), PTE_P|PTE_W|PTE_U);
+                current_task->stack->vm_start = (uint64_t)fault_va;
+                return;
+
+        }
+        uint64_t temp = 0x802a1000;
+	uint64_t *table1 = page_walk(current_task->pml4e, (void *)cr2, false, 0);
+	if(*table1 & PTE_P)
 	{
-		unsigned char u;
-		u = inb(0x60);
-		d = shiftmap[u];
+		if (*table1 & PTE_COW)
+		{
+			mem_alloc(current_task->pml4e, (void  *)temp, PTE_P|PTE_W|PTE_U);
+			loadcr3((void *)current_task->cr3);
+			memcpy((void *)(temp), (void *)(fault_va), 0x1000);
+			page_map(current_task->pid, (void *)(temp), current_task->pid, (void *)(fault_va), PTE_P|PTE_U|PTE_W);
+			page_unmap(current_task->pid, (void *)temp);
+			*table1 = *table1 & PTE_NCOW;
+			*table1 = *table1 | PTE_W;
+			return;
+	        }
 	}
-	else
-	{
-		d = map[c];
-	}
-	printf("%c", d);
-//	char *string = NULL;
-	char string[4096];
-	int i=0;
+	while(1);
+}
+
+volatile struct buf *scan_buf;
+
+void kbd_handler()
+{
+        outb(0x20,0x20);
+        unsigned char c = 0x0;
+        uint8_t d;
+        c = inb(0x60);
+        if (c & 0x80)
+                return;
+        if (c == 0x2a)
+        {
+                unsigned char u;
+                u = inb(0x60);
+                d = shiftmap[u];
+        }
+        else
+        {
+                d = map[c];
+        }
+        if(scan_buf->pos == 4095)
+        {
+                memset1(&(scan_buf->pp_buf), 0, 0x1000);
+                scan_buf->pos = 0;
+        }
+        kprintf("%c", d);
+        if (c == 0x1c)
+        {
+                flag1 = 1;
+        }
+        if (flag1 == 0)
+        {
+                scan_buf->pp_buf[scan_buf->pos] = d;
+                scan_buf->pos++;
+        }
+        char string[4096];
+        int i=0;
         volatile char *video = (volatile char*)0xFFFFFFFF800B8F90;
         *video++ = ' ';
         *video++ = 7;
@@ -160,37 +241,39 @@ void interrupt_handler1()
         if (d == '\n')
         {
                 string[0] = '\\';
-                string[1] = 'n';
+               string[1] = 'n';
                 string[2] = '\0';
-		i = 3;
+                i = 3;
         }
         else if(d == '\b')
         {
                 string[0] =  '\\';
                 string[1] = 'b';
                 string[2] = '\0';
-		i = 3;
+                i = 3;
         }
-	else if(d == '\t')
+        else if(d == '\t')
         {
                 string[0] = '\\';
                 string[1] = 't';
                 string[2] = '\0';
-		i = 3;
-        } 
+                i = 3;
+        }
         else
         {
                 string[0] = d;
                 string[1] = '\0';
-		i = 2;
+                i = 2;
         }
         video = (volatile char*)0xFFFFFFFF800B8F90;
-        while( *string != 0 )
+
+        i=0;
+        while( string[i] != '\0' )
         {
                 *video++ = string[i];
-		i++;
+                i++;
                 *video++ = 7;
         }
-	
+
 }
 

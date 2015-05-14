@@ -15,10 +15,6 @@ void interrupt_enable();
 
 void interrupt_handler();
 
-//void t_divide(void);
-//void t_kdb(void);
-//void t_timer(void);
-
 struct segment_gate_descriptor {
         uint64_t gd_offset1:16;         /* Segment offset (Lower 15-0 bits) */
         uint64_t gd_css:16;             /* Code segment selector */

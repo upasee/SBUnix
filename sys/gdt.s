@@ -13,6 +13,7 @@
 #  parameter 2: new code descriptor offset
 #  parameter 3: new data descriptor offset
 .global _x86_64_asm_lgdt
+.global tss_flush
 _x86_64_asm_lgdt:
 
 	lgdt (%rdi)
@@ -28,3 +29,9 @@ _x86_64_asm_lgdt:
 	movq %rdx, %ds
 	movq %rdx, %ss
 	retq
+
+/*
+tss_flush:
+	movq $0x2b,%rax 
+	ltr (%rax)
+	retq*/

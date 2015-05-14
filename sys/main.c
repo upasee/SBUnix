@@ -5,29 +5,28 @@
 #include <sys/pic.h>
 #include <sys/port.h>
 #include <sys/pic.h>
-#include <string.h>
+#include <sys/string.h>
 #include <sys/paging.h>
+#include <sys/process.h>
+#include <sys/elf.h>
+#include <sys/sched.h>
+#include <sys/dir.h>
+#include <sys/file.h>
+
+uint64_t *kernel_pml4;
+uint64_t kernel_cr3;
+volatile struct buf *scan_buf;
+char *current_dir;
 
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
 	interrupt_init();
         reload_idt();
-	
-	IRQ_clear_mask(0);
-	int div = 1193;
-	outb(0x43,0x36);
-	outb(0x40, div & 0xff);
-	outb(0x43,div >> 8);
-	interrupt_enable();
-
-	IRQ_clear_mask(1);
-
 	while(modulep[0] != 0x9001) 
 		modulep += modulep[1]+2;
 
-
 	// map memory for first level of the page table
-	uint64_t *pml4=pml4_init(physfree);
+	kernel_pml4=pml4_init(physfree);
 
 	// Mark all the pages as used
 	setPageVal();
@@ -38,7 +37,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 		{
 			// Mark all available pages as free
 			markAvailablePages(smap);
-			printf("Available Physical Memory [%x-%x]\n", smap->base, smap->base + smap->length);
+			kprintf("Available Physical Memory [%x-%x]\n", smap->base, smap->base + smap->length);
 		}
 	}
 
@@ -47,25 +46,42 @@ void start(uint32_t* modulep, void* physbase, void* physfree)
 
 	// Create a linked list of all free pages in physical memory
 	createPageFreeList();
-
+	
 	size_t nPages = (kern_pages(physbase,physfree))/0x1000;
 
 	// Load the kernel from kernel lower address to kernel higher address
-	vm_setup(pml4, nPages);
+	vm_setup(kernel_pml4, nPages);
 	
-	void *cr3val = physicalAddr((void *)pml4);
-	
-	// Load cr3
-	__asm __volatile(	"movq %0,%%cr3" 
-			 	: 
-				: "r" (cr3val)
-				: "memory","cc"
-			);
+	kernel_cr3= (uint64_t)physicalAddr((void *)kernel_pml4);
+	loadcr3((void *)kernel_cr3);
 
-	printf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+	elfStart = &_binary_tarfs_start;
+        elfEnd = &_binary_tarfs_end;
+
+	kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+	scan_buf = (struct buf*)kmalloc(sizeof(struct buf));
+
+	current_dir = (char *)kmalloc(100);
+	strcpy(current_dir,"/");
+
+	createProcesses(&_binary_tarfs_start, &_binary_tarfs_end);
+	file_init(&_binary_tarfs_start, &_binary_tarfs_end);
+
+	IRQ_clear_mask(0);
+        int div = 1193;
+        outb(0x43,0x36);
+        outb(0x40, div & 0xff);
+        outb(0x43,div >> 8);
+        interrupt_enable();
+
+        IRQ_clear_mask(1);
+
+	sched();
+
 	while(1);
 	// kernel starts here*/
 }
+
 
 #define INITIAL_STACK_SIZE 4096
 char stack[INITIAL_STACK_SIZE];
@@ -76,7 +92,7 @@ struct tss_t tss;
 void boot(void)
 {
 	// note: function changes rsp, local stack variables can't be practically used
-	register char *s, *v;
+	//register char *s, *v;
 	__asm__(
 		"movq %%rsp, %0;"
 		"movq %1, %%rsp;"
@@ -84,7 +100,6 @@ void boot(void)
 		:"r"(&stack[INITIAL_STACK_SIZE])
 	);
 	
-	PIC_remap(0x20,0x28);
 	reload_gdt();
 	setup_tss();
 	PIC_remap(0x20,0x28);
@@ -93,7 +108,8 @@ void boot(void)
 		&physbase,
 		(void*)(uint64_t)loader_stack[4]
 	);
-	s = "!!!!! start() returned !!!!!";
-	for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
+	//s = "!!!!! start() returned !!!!!";
+	//for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
 	while(1);
 }
+
