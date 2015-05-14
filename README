@@ -49,6 +49,11 @@ The shell will display the value of PS1 variable along with the absolute path of
 
 7. exit : exit from the shell.
 
+8. sbush xyz.sh will execute the script ONLY in the current working directory.
+         sbush will not open an interactive shell.
+         Beginning lines of the scripts can not be " #!/ " or some junk.
+         The shell will just execute a sequence of commands separated by a '\n' in a file.
+
 SOME EXCEPTIONS :
 
 1. If a background process tries to run scanf, it is killed.

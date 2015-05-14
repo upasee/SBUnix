@@ -70,6 +70,7 @@ void file_init(char *elfStart, char *elfEnd)
 			f->type=F_FILE;
 			f->start_addr=(void *)binary;
 			f->file_size=sizeInt;	
+
 		}
 		sizeInt=roundUp((void *)sizeInt, 512);
 		f->name=ph_init->name;
@@ -207,7 +208,6 @@ int64_t sys_open(char *name,int flags)
 				if(temp->type != F_FILE)
 				{
 					current_task->tf.reg_rax = -1;
-                                        kprintf("Not a regular file\n");
                                         return -1;
 				}
 			}

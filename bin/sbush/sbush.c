@@ -168,6 +168,8 @@ void shell_exec(char str[])
 	/* export PATH and PS1 */
 	else if(strcmp(input[0],"export")==0)
 	{
+		if(input[1] == NULL)
+			return;
 		tokenize(input[1],localenv,'=');
 		if(strcmp(localenv[0],"PATH")==0)
 			setpath(localenv[1]);
@@ -175,6 +177,36 @@ void shell_exec(char str[])
 			setps1(localenv[1]);
 		return;
 	}
+
+	/* Scripts sbush */
+        else if(strcmp(input[0],"sbush")==0)
+        {
+		int i=0,j=0;
+                if(noOfTok == 1)
+                {
+                        printf("Please specify the file name\n");
+                        return;
+                }
+		char src2[120];
+		char *scr_temp = (char *)malloc(100);
+		getcwd(src2,120);
+		strcpy(scr_temp,src2);
+		strcat(scr_temp, input[1]);
+		remove_slash_before(scr_temp);		
+                int fd = open(scr_temp,O_RDONLY);
+                char *scr[20];
+                char *buff;
+                buff = (char *)malloc(100);
+                read(fd,buff,100);
+                j=tokenize(buff,scr,'\n');
+                for(i=0;i<j;i++)
+                {
+                        shell_exec(scr[i]);
+                }
+                close(fd);
+                return;
+        }
+
 
 	/* Check for pipes */
 /*	for(i=0;str[i]!='\0';i++)
